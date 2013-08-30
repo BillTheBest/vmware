@@ -25,6 +25,9 @@ hosts = server.get_hosts().values()
 
 datastore = [] 
 
+def btog(i):
+   return "{0:.0f}".format(i / 1024**3)
+
 for ds, name in server.get_datastores().items():
    props = VIProperty(server, ds)
    try:
@@ -34,7 +37,14 @@ for ds, name in server.get_datastores().items():
      used = capacity - free
      overprov = used + uncommitted
      overprovPercent = (overprov / capacity) * 100
-     datastore.append((name, "{0:.0f}".format(capacity / 1024 / 1024 / 1024), "{0:.0f}".format(free / 1024 / 1024 / 1024), "{0:.0f}".format(used / 1024 / 1024 / 1024), "{0:.0f}".format(overprov / 1024 / 1024 / 1024), "{0:.0f}".format(overprovPercent), "{0:.0f}".format(uncommitted / 1024 / 1024 / 1024)))
+     datastore.append((name,
+                      btog(capacity),
+                      btog(free),
+                      btog(used),
+                      btog(overprov),
+                      "{0:.0f}".format(overprovPercent),
+                      btog(uncommitted)
+                     ))
    except AttributeError:
      pass
 
