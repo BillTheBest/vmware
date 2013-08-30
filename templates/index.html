@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Monitoramento - VMware</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{{url_for('static', filename='bootstrap.css')}}" rel="stylesheet" media="screen">
+    <script src="//code.jquery.com/jquery.js"></script>
+    <script src="{{url_for('static', filename='charts.js')}}"></script>
+    <script src="{{url_for('static', filename='tab.js')}}"></script>
+    <script src="{{url_for('static', filename='tooltip.js')}}"></script>
+  </head>
+  <body>
+    <ul class="nav nav-tabs" style="margin-bottom: 15px;">
+      <li class="active"><a href="#summary" data-toggle="tab">Sumário</a></li>
+      <li><a href="#vms" data-toggle="tab">Máquinas Virtuais</a></li>
+      <li><a href="#hosts" data-toggle="tab">Máquinas Físicas</a></li>
+      <li><a href="#datastore" data-toggle="tab">Datastores</a></li>
+    </ul>
+    <div class="tab-content"> <!-- content -->
+      <div class="tab-pane fade in active" id="summary"> <!-- summary-->
+        <div class="panel panel-default" style="width:380px; float: left; margin: 0 10px 0 5px;">
+          <div class="panel-heading">Sumário</div>
+            <div class="panel-body">
+              <table>
+                <tr>
+                  <td rowspan="3" style="width:140px;"><canvas id="canvas" width="120" height="120"></canvas></td> 
+                  <td style="width:40px;"><h4><span class="label label-default">{{ vms.all|count }}</span></h4></td>
+                  <td style="width:300px;"><h5>Total de máquinas virtuais</h5></td>
+                </tr>
+                <tr>
+                  <td style="width:40px;"><h4><span class="label label-success">{{ vms.poweredOn|count }}</span></h4></td>
+                  <td style="width:300px;"><h5>Máquinas ligadas</h5></td>
+                </tr>
+                <tr>
+                  <td style="width:40px;"><h4><span class="label label-danger">{{ vms.poweredOff|count }}</span></h4></td>
+                  <td style="width:300px;"><h5>Máquinas desligadas</h5></td>
+                </tr>
+              </table>
+            <div class="well" style="margin-top:10px; margin-bottom:0px;">
+              <table>
+           {% for name in datacenter %}
+                <tr>
+                  <td>Datacenter:</td>
+                  <td>{{name}}</td>
+                </tr>
+           {% endfor %}
+                <tr>
+                  <td>Versão:</td>
+                  <td>{{server_type}} {{server_version}}</td>
+                  </tr>
+                <tr>
+                  <td>Hosts:</td>
+                  <td>{{hosts|count}} máquinas físicas</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div> <!-- end of summary -->
+      <div class="tab-pane fade" id="vms"> <!-- vms -->
+        <div class="panel panel-default" style="width:800px; float: left; margin-left: 5px;">
+          <div class="panel-heading">Informações detalhadas</div>
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <td>Máquinas Virtuais</td><td>Datastore</td><td style="width: 110px;">Status</td> 
+              </tr>
+            </thead>
+      {% for vm in vms.all %}
+            <tr {% if vm[2] == "poweredOn" %} class="success" {% else %} class="danger" {% endif %} >
+              <td>{{ vm[0] }}</td><td>{{ vm[1] }}</td><td>{% if vm[2] == "poweredOn" %}<span class="label label-success">POWERED ON</span>{% else %}<span class="label label-danger">POWERED OFF</span>{% endif %}</td>
+            </tr>
+      {% endfor %}
+          </table>
+        </div>
+      </div> <!-- end of vms -->
+      <div class="tab-pane fade" id="hosts"> <!-- hosts -->
+        <div class="panel panel-default" style="width:600px; float: left; margin-left: 5px;">
+          <div class="panel-heading">Máquinas hospedeiras físicas</div>
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <td>Hostname/IP</td><td style="width: 110px;">Status</td>
+              </tr>
+            </thead>
+      {% for host in hosts|sort %}
+            <tr {% if host[1] == "isUp" %} class="success" {% else %} class="danger" {% endif %} >
+              <td>{{ host[0] }}</td><td>{% if host[1] == "isUp" %}<span class="label label-success">POWERED ON</span>{% else %}<span class="label label-danger">POWERED OFF</span>{% endif %}</td>
+            </tr>
+      {% endfor %}
+          </table>
+        </div>
+      </div> <!-- end of hosts -->
+      <div class="tab-pane fade" id="datastore"> <!-- datastore -->
+        <div class="panel panel-default">
+          <div class="panel-heading">Datastores</div>
+          <div class="panel-body">
+           {% for ds in datastore|sort %}
+            <div id="datastore-chart" style="float: left; margin-right: 30px;"> <!-- datastore charts -->
+              <table>
+                <tr>
+                  <td colspan="2">{{ds[0]}}</td>
+                </tr>
+                <tr>
+                  <td rowspan="3"><canvas id="{{ds[2]}}" width="100" height="100"></canvas></td>
+                  <td height="33px"><span class="label label-default tooltip-msg" data-toggle="tooltip" data-placement="right" title="Total">{{ds[1]}} GB</span></td>
+                </tr>
+                <tr>
+                  <td height="33px"><span class="label label-danger tooltip-msg" data-toggle="tooltip" data-placement="right" title="Em uso">{{ds[3]}} GB<span></td>
+                </tr>
+                <tr>
+                  <td height="33px"><span class="label label-success tooltip-msg" data-toggle="tooltip" data-placement="right" title="Livre">{{ds[2]}} GB</span></td>
+                </tr>
+                <tr>
+                  <td colspan="2">
+                    <div class="well well-sm" style="font-size: 10px; width: 170px;">
+                      Provisionado: {{ds[4]}} GB ({{ds[5]}}%)<br>
+                      Não comitado: {{ds[6]}} GB
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </div> <!-- end of datastore charts -->
+           {% endfor %}
+          </div>
+        </div>        
+      </div><!-- end of datastore -->
+    </div> <!-- end of content -->
+    <script>
+    var pieData = [
+        {
+            value: {{ vms.poweredOn|count }},
+            color: "#5cb85c"
+        },
+        {
+            value: {{ vms.poweredOff|count }},
+            color: "#d9534f"
+        }
+    ];
+    var myPie = new Chart(document.getElementById("canvas").getContext("2d")).Pie(pieData);
+    </script>
+    {% for ds in datastore %}
+    <script>
+    var pieData = [
+        {
+            value: {{ ds[2] }},
+            color: "#5cb85c"
+        },
+        {
+            value: {{ ds[3] }},
+            color: "#d9534f"
+        }
+    ];
+    var myPie = new Chart(document.getElementById("{{ds[2]}}").getContext("2d")).Pie(pieData);
+    </script>
+    {% endfor %}
+    <script>
+    $(function() {
+      $(".tooltip-msg").tooltip();
+    });
+    </script>
+</body>
+</html>
+
